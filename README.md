@@ -129,3 +129,173 @@ By using this software you agree that you understand and comply with all applica
 
 This project is released under the [MIT License](LICENSE) – see the `LICENSE` file for details (you can add one if desired).
 ```
+
+# Packet Sniffer – Enhanced Network Traffic Monitor
+
+A significantly upgraded passive packet sniffer written in Python using `scapy`.
+
+> ⚠️ **ETHICAL USE ONLY**  
+> For **educational and research purposes only**, on networks you own or have explicit written permission to monitor.  
+> Unauthorized interception of network traffic may violate local laws.
+
+---
+
+## What's New vs. Original
+
+| Feature | Original | Upgraded |
+|---|---|---|
+| HTTP capture | ✅ | ✅ |
+| DNS capture | ✅ | ✅ |
+| **HTTPS / TLS SNI detection** | ❌ | ✅ |
+| **ICMP support** | ❌ | ✅ |
+| **ARP support** | ❌ | ✅ |
+| **Colorized terminal output** | ❌ | ✅ |
+| **Live stats printer** | ❌ | ✅ |
+| **JSON-lines log format** | ❌ | ✅ |
+| **Rotating / structured log dir** | ❌ | ✅ |
+| **Protocol selector (CLI)** | ❌ | ✅ |
+| **Packet count limit (-c)** | ❌ | ✅ |
+| **SIGTERM graceful shutdown** | ❌ | ✅ |
+| **Final summary on exit** | ❌ | ✅ |
+| Thread-safe writes | ❌ | ✅ |
+| Verbose / quiet modes | ❌ | ✅ |
+| HTTP Host header extraction | ❌ | ✅ |
+
+---
+
+## Features
+
+- **Multi-protocol capture**: HTTP, HTTPS/TLS (SNI), DNS, ICMP, ARP
+- **TLS SNI extraction** – identify HTTPS destinations without decrypting traffic
+- **Colorized output** – protocol-coded colors in the terminal (disable with `--no-color`)
+- **Live statistics** – optional periodic stats dump (packets/sec, top DNS domains, etc.)
+- **Structured logging** – CSV + optional JSON-lines in a dedicated log directory
+- **Rotating application log** – `logs/sniffer_app.log` with size-based rotation
+- **Flexible BPF filtering** – choose protocols via `--protocols` or pass a raw BPF string
+- **Packet count limit** – stop automatically after N packets (`-c`)
+- **Graceful shutdown** – handles both Ctrl-C and SIGTERM cleanly
+
+---
+
+## Requirements
+
+- Python 3.9+
+- scapy ≥ 2.5.0
+- Root / Administrator privileges
+
+---
+
+## Installation
+
+```bash
+git clone <repo-url>
+cd sniffer-upgraded
+python3 -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+---
+
+## Usage
+
+```bash
+# Basic: HTTP + HTTPS + DNS on default interface
+sudo python3 sniffer.py
+
+# Capture all supported protocols
+sudo python3 sniffer.py -p http https dns icmp arp
+
+# Specific interface, quiet mode (log only, no terminal output)
+sudo python3 sniffer.py -i eth0 -q
+
+# Stop after 500 packets, print live stats every 10s, also write JSON log
+sudo python3 sniffer.py -c 500 --stats-interval 10 --json
+
+# Custom BPF filter
+sudo python3 sniffer.py -f "tcp port 8080 or udp port 5353"
+
+# No color (for piping to a file)
+sudo python3 sniffer.py --no-color | tee capture.txt
+```
+
+### Full CLI reference
+
+```
+usage: sniffer.py [-h] [-i INTERFACE] [-p {http,https,dns,icmp,arp} ...]
+                  [-f FILTER] [-c COUNT] [-o OUTPUT_DIR] [--json]
+                  [--stats-interval N] [--no-color] [-v] [-q]
+
+  -i, --interface       Network interface (auto-detected if omitted)
+  -p, --protocols       Protocols to capture [default: http https dns]
+  -f, --filter          Raw BPF filter (overrides --protocols)
+  -c, --count           Stop after N packets (0 = unlimited)
+  -o, --output-dir      Log directory [default: logs/]
+  --json                Also write JSON-lines log
+  --stats-interval N    Print live stats every N seconds (0 = off)
+  --no-color            Disable ANSI colors
+  -v, --verbose         Show all TCP packets, not just HTTP
+  -q, --quiet           Suppress per-packet terminal output
+```
+
+---
+
+## Log File Formats
+
+All logs are written to `logs/` by default.
+
+### `packet_log.csv`
+
+| Column | Description |
+|---|---|
+| timestamp | UTC ISO-8601 |
+| src_ip / dst_ip | IP addresses |
+| protocol | HTTP, HTTPS/TLS, DNS, ICMP, ARP |
+| src_port / dst_port | Transport ports |
+| http_method | GET, POST, etc. |
+| http_url | Request path |
+| http_host | HTTP Host header |
+| tls_sni | TLS Server Name Indication |
+| dns_query | Queried domain |
+| icmp_type / icmp_code | ICMP type/code numbers |
+| arp_op / arp_sender / arp_target | ARP operation and IPs |
+| pkt_len | Packet size in bytes |
+
+### `packet_log.jsonl` (with `--json`)
+
+One JSON object per line with the same fields.
+
+### `sniffer_app.log`
+
+Application-level events (errors, start/stop). Rotates at 5 MB, keeps 3 backups.
+
+---
+
+## File Structure
+
+```
+.
+├── sniffer.py          # Main script (single file)
+├── requirements.txt    # Dependencies
+├── README.md           # This file
+└── logs/               # Created at runtime
+    ├── packet_log.csv
+    ├── packet_log.jsonl  (if --json)
+    └── sniffer_app.log
+```
+
+---
+
+## Ethical & Legal Warning
+
+**Unauthorized packet capture is illegal in many jurisdictions.**  
+You must have explicit permission from the network owner before running this tool.  
+It is provided **exclusively** for educational use, security training, network troubleshooting, and authorized penetration testing.
+
+By using this software you agree that you understand and comply with all applicable laws. The author assumes **no liability** for misuse.
+
+---
+
+## License
+
+MIT License
